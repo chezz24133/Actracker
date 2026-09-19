@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>4atabase | Animal Company Player Database</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #121216;
+    --card: #18181f;
+    --border: #2a2a35;
+    --accent: #ffe600;
+    --accent-glow: rgba(255, 230, 0, 0.25);
+    --accent-dim: #b3a100;
+    --cyan: #00dcff;
+    --cyan-glow: rgba(0, 220, 255, 0.25);
+    --text: #f0f0f5;
+    --muted: #808095;
+    --success: #4ade80;
+    --danger: #f87171;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito Sans', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Particle Canvas */
+  #particles {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+  }
+
+  .app-container { position: relative; z-index: 1; }
+
+  /* Topbar */
+  .topbar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 28px; height: 60px;
+    background: rgba(18, 18, 22, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800; font-size: 20px; letter-spacing: -0.5px; color: var(--text);
+  }
+  .topbar-logo span { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
+  .topbar-spacer { flex: 1; }
+  .topbar-nav { display: flex; gap: 24px; }
+  .topbar-nav a {
+    font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+    color: var(--accent); text-decoration: none; transition: all 0.2s;
+    text-transform: uppercase; text-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  /* Main Layout */
+  .main { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+
+  .page-header { margin-bottom: 36px; }
+  .page-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px; font-weight: 800; letter-spacing: -2px; line-height: 1; margin-bottom: 10px;
+  }
+  .page-title span { color: var(--accent); text-shadow: 0 0 16px var(--accent-glow); }
+  .page-sub { color: var(--muted); font-size: 15px; }
+  .page-sub b { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+  .page-sub .showing-note { font-size: 12px; color: var(--muted); margin-left: 6px; opacity: 0.8; }
+
+  /* Controls */
+  .controls { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { flex: 1; min-width: 240px; position: relative; }
+  .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); transition: color 0.2s; }
+  .search-wrap.loading svg { color: var(--accent); }
+  
+  input[type="text"] {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Nunito Sans', system-ui, sans-serif;
+    font-size: 14px; padding: 12px 16px 12px 42px; border-radius: 8px; outline: none; transition: all 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  .filter-select {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-family: 'Nunito Sans', system-ui, sans-serif; font-size: 13px; font-weight: 700;
+    padding: 12px 36px 12px 16px; border-radius: 8px; outline: none; cursor: pointer; transition: all 0.2s;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffe600' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  .filter-select:focus, .filter-select:hover { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; text-transform: uppercase;
+  }
+  .btn-primary { background: var(--accent); color: #000; box-shadow: 0 0 12px var(--accent-glow); }
+  .btn-primary:hover { background: #fff066; transform: translateY(-2px); box-shadow: 0 0 20px var(--accent-glow); }
+  .btn-cyan { background: var(--cyan); color: #000; box-shadow: 0 0 12px var(--cyan-glow); }
+  .btn-cyan:hover { background: #66e9ff; transform: translateY(-2px); box-shadow: 0 0 20px var(--cyan-glow); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Add Panel */
+  .add-panel {
+    background: var(--surface); border: 1px solid var(--accent);
+    box-shadow: 0 0 15px var(--accent-glow); border-radius: 12px; padding: 20px; margin-bottom: 28px; display: none;
+  }
+  .add-panel.open { display: block; animation: fadeIn 0.2s ease-out; }
+  .add-panel h3 { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .add-row { display: flex; gap: 10px; align-items: center; }
+  .add-row input { padding-left: 16px; }
+  .add-status { margin-top: 10px; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .add-status.ok { color: var(--success); }
+  .add-status.err { color: var(--danger); }
+
+  /* Section Dividers */
+  .section-label { display: flex; align-items: center; gap: 14px; margin: 24px 0 20px 0; }
+  .section-label-text { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); }
+  .section-label-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+
+  /* Latest Joined Section */
+  #latestSection { margin-bottom: 36px; }
+  .latest-card-wrap { display: flex; justify-content: center; }
+  .latest-card-wrap .user-card { max-width: 360px; width: 100%; border-color: var(--accent-dim); }
+
+  /* User Grid & Cards */
+  .users-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  .user-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none; color: inherit; display: block; position: relative; overflow: hidden;
+  }
+  .user-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .user-card:hover {
+    border-color: var(--accent); transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5), 0 0 12px var(--accent-glow);
+  }
+  .user-card:hover::before { opacity: 1; }
+
+  .card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .avatar-mini {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-weight: bold; color: var(--accent); flex-shrink: 0;
+  }
+  .card-name { font-weight: 800; font-size: 16px; letter-spacing: -0.3px; line-height: 1.2; }
+  .card-user { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  .card-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 8px;
+    border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700;
+  }
+  .badge-dev { background: rgba(255, 230, 0, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+  .badge-online { background: rgba(74,222,128,0.12); color: var(--success); border: 1px solid rgba(74,222,128,0.3); }
+  .badge-offline { background: rgba(128,128,149,0.12); color: var(--muted); border: 1px solid rgba(128,128,149,0.2); }
+  .badge-mod { background: rgba(255, 165, 0, 0.15); color: #ffa500; border: 1px solid rgba(255,165,0,0.3); }
+  .badge-lobby { background: rgba(0, 220, 255, 0.15); color: var(--cyan); border: 1px solid var(--cyan); text-shadow: 0 0 6px var(--cyan-glow); }
+
+  .card-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; justify-content: space-between; }
+  .card-meta span b { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+  /* Modal / Profile Drawer */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+    z-index: 1000; display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none; transition: all 0.25s ease;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+  .profile-modal {
+    background: var(--surface); border: 1px solid var(--accent);
+    box-shadow: 0 0 30px var(--accent-glow); border-radius: 16px;
+    width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto;
+    position: relative; transform: scale(0.92); transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; flex-direction: column;
+  }
+  .modal-overlay.active .profile-modal { transform: scale(1); }
+
+  .modal-header-banner {
+    height: 90px; background: linear-gradient(135deg, rgba(255, 230, 0, 0.25), rgba(18, 18, 22, 0.9));
+    border-bottom: 1px solid var(--border); position: relative; padding: 16px;
+  }
+  .modal-close-btn {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--text);
+    width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s; font-family: 'JetBrains Mono', monospace; font-size: 16px;
+  }
+  .modal-close-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.1); }
+
+  .modal-body { padding: 0 24px 24px 24px; margin-top: -36px; }
+  .modal-profile-header { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
+  .modal-avatar-large {
+    width: 80px; height: 80px; border-radius: 16px;
+    background: var(--card); border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: bold; color: var(--accent);
+    box-shadow: 0 0 15px var(--accent-glow); flex-shrink: 0;
+  }
+  .modal-user-info { flex: 1; }
+  .modal-user-name { font-weight: 800; font-size: 24px; letter-spacing: -0.5px; }
+  .modal-user-handle { font-family: 'JetBrains Mono', monospace; color: var(--muted); font-size: 14px; }
+
+  .modal-grid-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .modal-stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center;
+  }
+  .modal-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: bold; color: var(--accent); margin-bottom: 2px; }
+  .modal-stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .modal-section { margin-bottom: 18px; }
+  .modal-section-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px;
+  }
+
+  .meta-list { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  .meta-item { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); }
+  .meta-label { color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .meta-val { font-family: 'JetBrains Mono', monospace; color: var(--text); font-weight: bold; }
+  .lobby-active { color: var(--cyan); text-shadow: 0 0 8px var(--cyan-glow); }
+
+  /* JSON Viewer Accordion */
+  .json-inspector {
+    background: #050507; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #a0a0b5;
+    max-height: 180px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+  }
+
+  /* States */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+  .loader { display: flex; justify-content: center; padding: 60px; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+  /* Toast Notification */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 20px; font-size: 13px; font-family: 'JetBrains Mono', monospace;
+    opacity: 0; transform: translateY(10px); transition: all 0.3s; pointer-events: none; z-index: 1001;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { border-color: var(--success); color: var(--success); box-shadow: 0 0 10px rgba(74,222,128,0.2); }
+  .toast.err { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 10px rgba(248,113,113,0.2); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 900px) { .users-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .users-grid { grid-template-columns: 1fr; } .modal-grid-stats { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<div class="app-container">
+  <div class="topbar">
+    <div class="topbar-logo"><span>4</span>ATABASE</div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-nav">
+      <a href="#" class="active">Players</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-header">
+      <div class="page-title"><span>4</span>ATABASE</div>
+      <div class="page-sub">
+        <b id="totalCount">...</b> registered players
+        <span class="showing-note" id="showingNote"></span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-wrap" id="searchWrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search by username, display name, or lobby code..."/>
+      </div>
+      <select class="filter-select" id="filterSelect">
+        <option value="all">All Players</option>
+        <option value="in_lobby">In Active Lobby</option>
+        <option value="moderator">Moderators</option>
+        <option value="developer">Developers</option>
+        <option value="richest">Richest</option>
+        <option value="most_friends">Most Friends</option>
+        <option value="oldest">Oldest Accounts</option>
+      </select>
+      <button class="btn btn-primary" onclick="playSound('select'); toggleAddPanel()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Add User
+      </button>
+    </div>
+
+    <div class="add-panel" id="addPanel">
+      <h3>Add Player to 4atabase</h3>
+      <div class="add-row">
+        <input type="text" id="addUsername" placeholder="Enter Nakama username..." style="flex:1"/>
+        <button class="btn btn-primary" onclick="addUser()">Fetch & Save</button>
+        <button class="btn btn-ghost" onclick="playSound('select'); toggleAddPanel()">Cancel</button>
+      </div>
+      <div class="add-status" id="addStatus"></div>
+    </div>
+
+    <div id="latestSection">
+      <div class="section-label">
+        <span class="section-label-text">Latest Joined Player</span>
+        <div class="section-label-line"></div>
+      </div>
+      <div id="latestContent">
+        <div class="loader"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <div id="gridSection">
+      <div class="section-label">
+        <span class="section-label-text" id="gridLabel">200 Random Players</span>
+        <div class="section-label-line"></div>
+      </div>
+      <div id="content">
+        <div class="loader"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detailed Profile Modal -->
+<div class="modal-overlay" id="profileModal" onclick="closeModalOnBackdrop(event)">
+  <div class="profile-modal">
+    <div class="modal-header-banner">
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-profile-header">
+        <div class="modal-avatar-large" id="modalAvatar">?</div>
+        <div class="modal-user-info">
+          <div class="modal-user-name" id="modalDisplayName">Loading...</div>
+          <div class="modal-user-handle" id="modalUsername">@username</div>
+          <div class="card-badges" id="modalBadges" style="margin-top: 6px;"></div>
+        </div>
+      </div>
+
+      <div class="modal-grid-stats">
+        <div class="modal-stat-card">
+          <div class="modal-stat-value" id="modalFriends">0</div>
+          <div class="modal-stat-label">Friends</div>
+        </div>
+        <div class="modal-stat-card">
+          <div class="modal-stat-value" id="modalStatus">Offline</div>
+          <div class="modal-stat-label">Status</div>
+        </div>
+        <div class="modal-stat-card">
+          <div class="modal-stat-value" id="modalJoinedDate">—</div>
+          <div class="modal-stat-label">Joined</div>
+        </div>
+      </div>
+
+      <!-- Animal Company Lobby Info Section -->
+      <div class="modal-section">
+        <div class="modal-section-title">Animal Company Game Session</div>
+        <div class="meta-list">
+          <div class="meta-item">
+            <span class="meta-label">Current Lobby Code:</span>
+            <span class="meta-val" id="modalLobbyCode">Not in Lobby</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Account Identifiers</div>
+        <div class="meta-list">
+          <div class="meta-item">
+            <span class="meta-label">User ID:</span>
+            <span class="meta-val" id="modalUserId">...</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Account Created:</span>
+            <span class="meta-val" id="modalCreatedFull">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Cosmetics & Customization</div>
+        <div class="meta-list">
+          <div class="meta-item">
+            <span class="meta-label">Primary Color:</span>
+            <span class="meta-val" id="modalColor">Default</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Equipped Accessories:</span>
+            <span class="meta-val" id="modalAccessories">None</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Raw Player Object Inspector</div>
+        <pre class="json-inspector" id="modalJson">{}</pre>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top: 10px; flex-wrap: wrap;">
+        <button class="btn btn-cyan" id="btnCopyLobby" style="flex:1;" onclick="copyLobbyCode()">Copy Lobby Code</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="copyUserId()">Copy User ID</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = 'http://156.146.169.238:3000';
+
+let loadedUsersMap = new Map();
+let currentModalUser = null;
+let currentFilter = 'all';
+let currentSearch = '';
+let searchTimer = null;
+
+// --- Web Audio Synthesizer ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  const now = audioCtx.currentTime;
+  if (type === 'select') {
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now); osc.stop(now + 0.08);
+  } else if (type === 'open') {
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+    osc.start(now); osc.stop(now + 0.12);
+  } else if (type === 'success') {
+    osc.frequency.setValueAtTime(523.25, now);
+    osc.frequency.setValueAtTime(659.25, now + 0.08);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+    osc.start(now); osc.stop(now + 0.25);
+  } else if (type === 'error') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.linearRampToValueAtTime(110, now + 0.15);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+    osc.start(now); osc.stop(now + 0.15);
+  }
+}
+
+// --- Particle Background ---
+(function initParticles() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  const particles = Array.from({ length: 45 }, () => ({
+    x: Math.random() * width, y: Math.random() * height,
+    vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+    size: Math.random() * 2 + 1
+  }));
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = 'rgba(255, 230, 0, 0.5)';
+    ctx.strokeStyle = 'rgba(255, 230, 0, 0.05)';
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = width; if (p.x > width) p.x = 0;
+      if (p.y < 0) p.y = height; if (p.y > height) p.y = 0;
+
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        const dx = p.x - p2.x, dy = p.y - p2.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(render);
+  }
+  render();
+})();
+
+// --- Helper Functions ---
+function getLobbyCode(user) {
+  if (!user) return null;
+  return user.room || user.roomCode || user.room_id || user.lobby || user.current_room || user.presence?.room || user.presence?.lobby || null;
+}
+
+function showToast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast show ${type}`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function toggleAddPanel() {
+  const p = document.getElementById('addPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) document.getElementById('addUsername').focus();
+  document.getElementById('addStatus').textContent = '';
+}
+
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildCard(u) {
+  const uid = u.id || u.username;
+  loadedUsersMap.set(uid, u);
+
+  const name = u.display_name || u.username || 'Unknown';
+  const username = u.username || u.id || 'N/A';
+  const initial = name.charAt(0).toUpperCase();
+
+  const lobbyCode = getLobbyCode(u);
+
+  const badges = [];
+  if (lobbyCode) badges.push(`<span class="badge badge-lobby">Code: ${escHtml(lobbyCode)}</span>`);
+  if (u.is_developer) badges.push(`<span class="badge badge-dev">Dev</span>`);
+  if ((u.avatar?.accessories || []).includes('acc_head_mop')) badges.push(`<span class="badge badge-mod">Mod</span>`);
+  badges.push(`<span class="badge ${u.online ? 'badge-online' : 'badge-offline'}">${u.online ? 'Online' : 'Offline'}</span>`);
+
+  const created = u.create_time
+    ? new Date(u.create_time).toLocaleDateString('en-GB', { year: 'numeric', month: 'short' })
+    : '—';
+
+  return `
+    <div class="user-card" onclick="openProfileModal('${escHtml(uid)}')">
+      <div class="card-top">
+        <div class="avatar-mini">${initial}</div>
+        <div>
+          <div class="card-name">${escHtml(name)}</div>
+          <div class="card-user">@${escHtml(username)}</div>
+        </div>
+      </div>
+      <div class="card-badges">${badges.join('')}</div>
+      <div class="card-meta">
+        <span><b>${u.edge_count || 0}</b> friends</span>
+        <span>Joined <b>${created}</b></span>
+      </div>
+    </div>
+  `;
+}
+
+// --- Modal Details Logic ---
+async function openProfileModal(uid) {
+  playSound('open');
+  let user = loadedUsersMap.get(uid);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/users/${uid}`);
+    if (res.ok) {
+      const freshData = await res.json();
+      if (freshData) user = freshData;
+    }
+  } catch (e) {
+    // Fall back to cached data
+  }
+
+  if (!user) return;
+  currentModalUser = user;
+
+  const name = user.display_name || user.username || 'Unknown';
+  const username = user.username || user.id || 'N/A';
+  const initial = name.charAt(0).toUpperCase();
+
+  document.getElementById('modalAvatar').textContent = initial;
+  if (user.avatar?.primaryColor) {
+    document.getElementById('modalAvatar').style.borderColor = '#' + user.avatar.primaryColor;
+    document.getElementById('modalAvatar').style.color = '#' + user.avatar.primaryColor;
+  } else {
+    document.getElementById('modalAvatar').style.borderColor = 'var(--accent)';
+    document.getElementById('modalAvatar').style.color = 'var(--accent)';
+  }
+
+  document.getElementById('modalDisplayName').textContent = name;
+  document.getElementById('modalUsername').textContent = `@${username}`;
+  document.getElementById('modalFriends').textContent = user.edge_count || 0;
+  document.getElementById('modalStatus').textContent = user.online ? 'Online' : 'Offline';
+  document.getElementById('modalStatus').style.color = user.online ? 'var(--success)' : 'var(--muted)';
+
+  const lobbyCode = getLobbyCode(user);
+  const lobbyElement = document.getElementById('modalLobbyCode');
+  const btnCopyLobby = document.getElementById('btnCopyLobby');
+
+  if (lobbyCode) {
+    lobbyElement.textContent = lobbyCode;
+    lobbyElement.className = 'meta-val lobby-active';
+    btnCopyLobby.style.display = 'inline-flex';
+  } else {
+    lobbyElement.textContent = 'Not currently in a lobby';
+    lobbyElement.className = 'meta-val';
+    btnCopyLobby.style.display = 'none';
+  }
+
+  const badges = [];
+  if (lobbyCode) badges.push(`<span class="badge badge-lobby">Lobby: ${escHtml(lobbyCode)}</span>`);
+  if (user.is_developer) badges.push(`<span class="badge badge-dev">Developer</span>`);
+  if ((user.avatar?.accessories || []).includes('acc_head_mop')) badges.push(`<span class="badge badge-mod">Moderator</span>`);
+  badges.push(`<span class="badge ${user.online ? 'badge-online' : 'badge-offline'}">${user.online ? 'Online' : 'Offline'}</span>`);
+  document.getElementById('modalBadges').innerHTML = badges.join('');
+
+  const createDate = user.create_time ? new Date(user.create_time) : null;
+  document.getElementById('modalJoinedDate').textContent = createDate ? createDate.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '—';
+  document.getElementById('modalCreatedFull').textContent = createDate ? createDate.toLocaleString() : '—';
+  document.getElementById('modalUserId').textContent = user.id || 'N/A';
+
+  document.getElementById('modalColor').textContent = user.avatar?.primaryColor ? `#${user.avatar.primaryColor}` : 'Default';
+  const accessories = user.avatar?.accessories || [];
+  document.getElementById('modalAccessories').textContent = accessories.length ? accessories.join(', ') : 'None equipped';
+
+  document.getElementById('modalJson').textContent = JSON.stringify(user, null, 2);
+
+  document.getElementById('profileModal').classList.add('active');
+}
+
+function closeModal() {
+  playSound('select');
+  document.getElementById('profileModal').classList.remove('active');
+}
+
+function closeModalOnBackdrop(e) {
+  if (e.target.id === 'profileModal') closeModal();
+}
+
+function copyUserId() {
+  if (!currentModalUser) return;
+  navigator.clipboard.writeText(currentModalUser.id || currentModalUser.username);
+  playSound('success');
+  showToast('User ID copied to clipboard!');
+}
+
+function copyLobbyCode() {
+  if (!currentModalUser) return;
+  const code = getLobbyCode(currentModalUser);
+  if (code) {
+    navigator.clipboard.writeText(code);
+    playSound('success');
+    showToast(`Lobby Code ${code} copied!`);
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+function renderUsers(users, container, note = '') {
+  const el = document.getElementById(container);
+  document.getElementById('showingNote').textContent = note;
+
+  if (!users || !users.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚡</div><div>No users found.</div></div>`;
+    return;
+  }
+
+  const cards = users.map(u => buildCard(u)).join('');
+  el.innerHTML = `<div class="users-grid">${cards}</div>`;
+}
+
+function showLoader(container) {
+  document.getElementById(container).innerHTML = `<div class="loader"><div class="spinner"></div></div>`;
+}
+
+// --- API Calls ---
+async function loadTotalCount() {
+  try {
+    const res = await fetch(`${API_BASE}/api/users/count`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    document.getElementById('totalCount').textContent = data.count.toLocaleString();
+  } catch (err) {
+    document.getElementById('totalCount').textContent = '—';
+  }
+}
+
+async function loadLatestUser() {
+  showLoader('latestContent');
+  try {
+    const res = await fetch(`${API_BASE}/api/users/latest`);
+    if (!res.ok) throw new Error();
+    const user = await res.json();
+    document.getElementById('latestContent').innerHTML = `<div class="latest-card-wrap">${buildCard(user)}</div>`;
+  } catch {
+    document.getElementById('latestContent').innerHTML = `<div class="empty"><div>Could not load latest player.</div></div>`;
+  }
+}
+
+async function loadRandomUsers() {
+  showLoader('content');
+  try {
+    const res = await fetch(`${API_BASE}/api/users?limit=200`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const users = await res.json();
+    renderUsers(users, 'content', '— showing random players');
+  } catch (err) {
+    document.getElementById('content').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">⚠️</div>
+        <div style="color:var(--danger)">Failed to fetch players from API proxy.</div>
+        <div style="font-size:12px; margin-top:8px;">Ensure proxy is running at ${API_BASE}</div>
+      </div>
+    `;
+  }
+}
+
+async function fetchUsers() {
+  const q = document.getElementById('searchInput').value.trim();
+  const type = document.getElementById('filterSelect').value;
+
+  currentSearch = q; currentFilter = type;
+
+  document.getElementById('latestSection').style.display = (q || type !== 'all') ? 'none' : '';
+  document.getElementById('gridLabel').textContent = q ? 'Search Results' : `${type.replace('_', ' ')} Players`;
+
+  if (!q && type === 'all') {
+    await loadRandomUsers();
+    return;
+  }
+
+  document.getElementById('searchWrap').classList.add('loading');
+  showLoader('content');
+
+  try {
+    const res = await fetch(`${API_BASE}/api/users/search?username=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&limit=200`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    let users = Array.isArray(data) ? data : [data];
+
+    // Client filter for active lobby users if required
+    if (type === 'in_lobby') {
+      users = users.filter(u => getLobbyCode(u) !== null);
+    }
+
+    renderUsers(users, 'content', `— ${users.length} result${users.length !== 1 ? 's' : ''}`);
+  } catch {
+    renderUsers([], 'content', '— search failed');
+  } finally {
+    document.getElementById('searchWrap').classList.remove('loading');
+  }
+}
+
+async function addUser() {
+  const name = document.getElementById('addUsername').value.trim();
+  const status = document.getElementById('addStatus');
+  if (!name) {
+    playSound('error');
+    status.textContent = 'Please enter a username.';
+    status.className = 'add-status err';
+    return;
+  }
+
+  status.textContent = 'Fetching from Nakama...';
+  status.className = 'add-status';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/users/add?username=${encodeURIComponent(name)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Failed to add user');
+
+    playSound('success');
+    status.textContent = `Successfully saved ${data.display_name || data.username}.`;
+    status.className = 'add-status ok';
+    document.getElementById('addUsername').value = '';
+    showToast(`${data.username} added!`, 'ok');
+    
+    loadTotalCount();
+    loadLatestUser();
+  } catch (err) {
+    playSound('error');
+    status.textContent = err.message || 'Request failed.';
+    status.className = 'add-status err';
+  }
+}
+
+// --- Event Listeners ---
+document.getElementById('searchInput').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(fetchUsers, 350);
+});
+
+document.getElementById('filterSelect').addEventListener('change', () => {
+  playSound('select');
+  fetchUsers();
+});
+
+document.getElementById('addUsername').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addUser();
+});
+
+// --- Initial Load ---
+loadTotalCount();
+loadLatestUser();
+loadRandomUsers();
+</script>
+</body>
+</html>
